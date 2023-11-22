@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  siem:
+  - apiVersion: v2
+    appVersion: 0.1.0
+    created: "2023-11-22T16:02:27.21231442+01:00"
+    description: Siem Helm Chart
+    digest: 976c83d49866232adba050350d3b7d9c005059c81901db4e6eae82c68f642771
+    name: siem
+    type: application
+    urls:
+    - siem-0.1.0.tgz
+    version: 0.1.0
+generated: "2023-11-22T16:02:27.207640569+01:00"
