@@ -1,0 +1,17 @@
+{{- if .Values.globalService }}
+apiVersion: assist.eu/v1
+kind: MultiClusterService
+metadata:
+  name: {{ include "elasticsearch.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  annotations:
+    io.cilium/global-service: "true"
+  labels:
+    {{- include "elasticsearch.labels" . | nindent 4 }}
+spec:
+  ports:
+    - name: elasticport
+      port: {{ .Values.elasticsearch.service.ports.elasticport.port }}
+      targetPort: {{ .Values.elasticsearch.service.ports.elasticport.targetPort }}
+      protocol: {{ .Values.elasticsearch.service.ports.elasticport.protocol }}
+{{- end }}

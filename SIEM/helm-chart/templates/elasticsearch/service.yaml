@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "elasticsearch.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "elasticsearch.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.elasticsearch.service.type }}
+  ports:
+    - name: api
+      port: {{ .Values.elasticsearch.service.ports.api.port }}
+      targetPort: {{ .Values.elasticsearch.service.ports.api.targetPort }}
+      protocol: {{ .Values.elasticsearch.service.ports.api.protocol }}
+      {{- if and (or (eq .Values.elasticsearch.service.type "NodePort") (eq .Values.elasticsearch.service.type "LoadBalancer")) (not (empty .Values.elasticsearch.service.ports.api.nodePort)) }}
+      nodePort: {{ .Values.elasticsearch.service.ports.api.nodePort }}
+      {{- end }}
+  selector:
+    {{- include "elasticsearch.selectorLabels" . | nindent 4 }}

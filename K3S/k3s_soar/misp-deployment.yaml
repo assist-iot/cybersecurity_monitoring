@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: misp
+  name: misp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: misp
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        service: misp
+    spec:
+      containers:
+        - env:
+            - name: CRON_USER_ID
+              value: "1"
+            - name: DISIPV6
+              value: "true"
+            - name: HOSTNAME
+              value: https://localhost
+            - name: INIT
+              value: "true"
+            - name: REDIS_FQDN
+              value: redis
+          image: coolacid/misp-docker:core-latest
+          name: misp
+          ports:
+            - containerPort: 80
+            - containerPort: 443
+          resources: {}
+      restartPolicy: Always
+status: {}

@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: orborus
+  name: orborus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: orborus
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        service: orborus
+    spec:
+      containers:
+        - env:
+            - name: BASE_URL
+              value: http://shuffle-backend:5001
+            - name: CLEANUP
+              value: "false"
+            - name: DOCKER_API_VERSION
+              value: "1.40"
+            - name: ENVIRONMENT_NAME
+              value: Shuffle
+            - name: HTTPS_PROXY
+            - name: HTTP_PROXY
+            - name: ORG_ID
+              value: Shuffle
+            - name: SHUFFLE_APP_SDK_VERSION
+              value: 0.8.60
+            - name: SHUFFLE_BASE_IMAGE_NAME
+              value: frikky
+            - name: SHUFFLE_BASE_IMAGE_REGISTRY
+              value: ghcr.io
+            - name: SHUFFLE_BASE_IMAGE_TAG_SUFFIX
+              value: '"-0.8.60"'
+            - name: SHUFFLE_ORBORUS_EXECUTION_TIMEOUT
+              value: "600"
+            - name: SHUFFLE_PASS_WORKER_PROXY
+              value: "False"
+            - name: SHUFFLE_WORKER_VERSION
+              value: 0.8.63
+          image: ghcr.io/frikky/shuffle-orborus:0.8.63
+          name: shuffle-orborus
+          resources: {}
+          volumeMounts:
+            - mountPath: /var/run/docker.sock
+              name: orborus-claim0
+      hostname: shuffle-orborus
+      restartPolicy: Always
+      volumes:
+        - name: orborus-claim0
+          persistentVolumeClaim:
+            claimName: orborus-claim0
+status: {}

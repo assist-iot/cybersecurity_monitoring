@@ -1,0 +1,406 @@
+# Default values for enabler.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# String to partially override enabler.fullname template (will maintain the release name).
+nameOverride: ""
+# String to fully override enabler.fullname template.
+fullnameOverride: ""
+# Deploy all the components in specific K8s node(s).
+enablerNodeSelector: {}
+# Cilium Multi-cluster global service.
+globalService: false
+
+# Component elasticsearch values.
+elasticsearch:
+  tier: external
+  replicaCount: 1
+
+  # Configuration of the container image.
+  imagePullSecrets: []
+  image:
+    repository: elasticsearch
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "7.11.1"
+    pullPolicy: IfNotPresent
+  
+  # Configuration of the service: type and ports.
+  service:
+    type: ClusterIP
+    ports:
+      elasticport:
+        port: 9200
+        targetPort: 9200
+        containerPort: 9200
+        nodePort: ""
+        protocol: TCP
+
+  # The specification of the resources is needed for the proper functioning 
+  # of the Smart Orchestrator enabler (requests)
+  # and of the Resource provisioning enabler (limits).
+  resources: {}
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+
+  autoscaling:
+    enabled: false
+    # minReplicas: 1
+    # maxReplicas: 3
+    # targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+
+  # Include here the environment variables to be used in containers section of the component's manifest.
+  # TODO: Here and in the manifest is included an example, please adapt them to the requirements of your component.
+  envVars:
+    # - http.host=0.0.0.0
+    # - discovery.type=single-node
+    # - cluster.name=hive
+    # - script.allowed_types= inline
+    # - thread_pool.search.queue_size=100000
+    # - thread_pool.write.queue_size=10000
+    # - gateway.recover_after_nodes=1
+    # - xpack.security.enabled=false
+    # - bootstrap.memory_lock=true
+    # - 'ES_JAVA_OPTS=-Xms256m -Xmx256m'
+    httpHost: "0.0.0.0"
+    discoveryType: single-node
+    clusterName: hive
+    scriptAllowedTypes: inline
+    threadPoolSearchQueueSize: "100000"
+    threadPoolWriteQueueSize: "100000"
+    gatewayRecoverAfterNodes: "1"
+    xpackSecurityEnabled: false
+    bootstrapMemoryLock: true
+    esJavaOpts: "-Xms512m -Xmx512m"
+
+  # Component data persistence
+  persistence:
+    enabled: true
+    existingClaim: ""
+    # mountPath: /path/in/container
+    accessModes:
+      - ReadWriteOnce
+    size: 500Mi
+
+  # Configure this parameters to deploy the component in specific K8s node(s).
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Component kibana values.
+kibana:
+  tier: internal
+  replicaCount: 1
+
+  # Configuration of the container image.
+  imagePullSecrets: []
+  image:
+    repository: docker.elastic.co/kibana/kibana
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "7.11.1"
+    pullPolicy: IfNotPresent
+  
+  # Configuration of the service: type and ports.
+  service:
+    type: NodePort
+    ports:
+      kibanaport:
+        port: 5601
+        targetPort: 5601
+        containerPort: 5601
+        nodePort: ""
+        protocol: TCP
+
+  # The specification of the resources is needed for the proper functioning 
+  # of the Smart Orchestrator enabler (requests)
+  # and of the Resource provisioning enabler (limits).
+  resources: {}
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+
+  autoscaling:
+    enabled: false
+    # minReplicas: 1
+    # maxReplicas: 3
+    # targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+
+  # Include here the environment variables to be used in containers section of the component's manifest.
+  # TODO: Here and in the manifest is included an example, please adapt them to the requirements of your component.
+  # envVars:
+  #   exampleEnvVar: exampleValue
+
+
+  # Configure this parameters to deploy the component in specific K8s node(s).
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Component cortex values.
+cortex:
+  tier: internal
+  replicaCount: 1
+
+  # Configuration of the container image.
+  imagePullSecrets: []
+  image:
+    repository: thehiveproject/cortex
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  # Configuration of the service: type and ports.
+  service:
+    type: NodePort
+    ports:
+      cortexport:
+        port: 9001
+        targetPort: 9001
+        containerPort: 9001
+        nodePort: ""
+        protocol: TCP
+
+  # The specification of the resources is needed for the proper functioning 
+  # of the Smart Orchestrator enabler (requests)
+  # and of the Resource provisioning enabler (limits).
+  resources: {}
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+
+  autoscaling:
+    enabled: false
+    # minReplicas: 1
+    # maxReplicas: 3
+    # targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+
+  # Include here the environment variables to be used in containers section of the component's manifest.
+  # TODO: Here and in the manifest is included an example, please adapt them to the requirements of your component.
+  envVars:
+    httpProxy: "${http_proxy}"
+    httpsProxy: "${https_proxy}"
+
+  # Component data persistence
+  persistence:
+    enabled: true
+    existingClaim: ""
+    volumes:
+      applicationconf:
+        accessModes:
+          - ReadWriteOnce
+        size: 50Mi
+      dockersock:
+        accessModes:
+          - ReadWriteOnce
+        size: 50Mi
+      temps:
+        accessModes:
+          - ReadWriteOnce
+        size: 50Mi
+
+
+  # Configure this parameters to deploy the component in specific K8s node(s).
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Component cassandra values.
+cassandra:
+  tier: internal
+  replicaCount: 1
+
+  # Configuration of the container image.
+  imagePullSecrets: []
+  image:
+    repository: cassandra
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "3.11"
+    pullPolicy: IfNotPresent
+  
+  # Configuration of the service: type and ports.
+  service:
+    type: ClusterIP
+    ports:
+      cassandraport:
+        port: 9042
+        targetPort: 9042
+        containerPort: 9042
+        nodePort: ""
+        protocol: TCP
+
+  # The specification of the resources is needed for the proper functioning 
+  # of the Smart Orchestrator enabler (requests)
+  # and of the Resource provisioning enabler (limits).
+  resources: {}
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+
+  autoscaling:
+    enabled: false
+    # minReplicas: 1
+    # maxReplicas: 3
+    # targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+
+  # Include here the environment variables to be used in containers section of the component's manifest.
+  # TODO: Here and in the manifest is included an example, please adapt them to the requirements of your component.
+  envVars:
+    maxHeapSize: 1G
+    heapNewSize: 1G
+    cassandraClusterName: thp
+
+  # Component data persistence
+  persistence:
+    enabled: true
+    existingClaim: ""
+    # mountPath: /path/in/container
+    accessModes:
+      - ReadWriteOnce
+    size: 50Mi
+
+  # Configure this parameters to deploy the component in specific K8s node(s).
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Component thehive4 values.
+thehive4:
+  tier: internal
+  replicaCount: 1
+
+  # Configuration of the container image.
+  imagePullSecrets: []
+  image:
+    repository: thehiveproject/thehive4
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  # Configuration of the service: type and ports.
+  service:
+    type: NodePort
+    ports:
+      thehiveport:
+        port: 9000
+        targetPort: 9000
+        containerPort: 9000
+        nodePort: ""
+        protocol: TCP
+
+  # The specification of the resources is needed for the proper functioning 
+  # of the Smart Orchestrator enabler (requests)
+  # and of the Resource provisioning enabler (limits).
+  resources: {}
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+
+  autoscaling:
+    enabled: false
+    # minReplicas: 1
+    # maxReplicas: 3
+    # targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+
+  # Include here the environment variables to be used in containers section of the component's manifest.
+  # TODO: Here and in the manifest is included an example, please adapt them to the requirements of your component.
+  envVars:
+    exampleEnvVar: exampleValue
+
+  # Component data persistence
+  persistence:
+    enabled: true
+    existingClaim: ""
+    volumes:
+      applicationconf:
+        accessModes:
+          - ReadWriteOnce
+        size: 50Mi
+      data:
+        accessModes:
+          - ReadWriteOnce
+        size: 50Mi
+      index:
+        accessModes:
+          - ReadWriteOnce
+        size: 50Mi
+
+  # Configure this parameters to deploy the component in specific K8s node(s).
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+

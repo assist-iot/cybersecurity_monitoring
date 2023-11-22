@@ -1,0 +1,159 @@
+######################################################################################################################
+docker pull ravaga/assistiot-helm-chart-generator
+
+docker run -it --rm --name helm-chart-generator -v /path/to/locate/the/charts:/chart-generator/generated-charts ravaga/assistiot-helm-chart-generator
+
+docker run -it --rm --name helm-chart-generator -v /home/nextel/miniSoar/ChartGenerator/miniSOAR:/chart-generator/generated-charts ravaga/assistiot-helm-chart-generator
+
+path = /home/nextel/miniSoar/ChartGenerator/miniSOAR
+
+######################################################################################################################
+
+############################################################################################
+# SOAR (Security Orchestration and Automated Response. © S21sec Cyber Solutions by Thales) #
+############################################################################################
+
+elasticsearch: "service"+"statefulset"
+image: 'docker.elastic.co/elasticsearch/elasticsearch:7.11.1'
+
+  elasticsearch:
+    image: 'docker.elastic.co/elasticsearch/elasticsearch:7.11.1'
+    container_name: elasticsearch
+    restart: unless-stopped
+    ports:
+      - '0.0.0.0:9200:9200'
+    environment:
+      - http.host=0.0.0.0
+      - discovery.type=single-node
+      - cluster.name=hive
+      - script.allowed_types= inline
+      - thread_pool.search.queue_size=100000
+      - thread_pool.write.queue_size=10000
+      - gateway.recover_after_nodes=1
+      - xpack.security.enabled=false
+      - bootstrap.memory_lock=true
+      - 'ES_JAVA_OPTS=-Xms256m -Xmx256m'
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - ./vol/elasticsearch_data:/usr/share/elasticsearch/data
+      - ./vol/elasticsearch_logs:/usr/share/elasticsearch/logs
+
+    httpHost: "0.0.0.0"
+    discoveryType: single-node
+    clusterName: hive
+    scriptAllowedTypes: inline
+    threadPoolSearchQueueSize: "100000"
+    threadPoolWriteQueueSize: "100000"
+    gatewayRecoverAfterNodes: "1"
+    xpackSecurityEnabled: false
+    bootstrapMemoryLock: true
+    esJavaOpts: "-Xms512m -Xmx512m"
+
+
+
+kibana: "sevice"+"deployment"
+image: 'docker.elastic.co/kibana/kibana:7.11.1'
+container_name: kibana
+
+  kibana:
+    image: 'docker.elastic.co/kibana/kibana:7.11.1'
+    container_name: kibana
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+    ports:
+      - '5601:5601'
+
+
+
+cortex: "service"+"statefulset"
+image: 'thehiveproject/cortex:latest'
+container_name: cortex
+
+  cortex:
+    image: 'thehiveproject/cortex:latest'
+    container_name: cortex
+    build: ./cortex/.
+    restart: unless-stopped
+    volumes:
+      - ./cortex/application.conf:/etc/cortex/application.conf
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp:/tmp
+
+    environment:
+      - http_proxy=${http_proxy}
+      - https_proxy=${https_proxy}      
+    depends_on:
+      - elasticsearch
+    ports:
+      - '0.0.0.0:9001:9001'
+
+
+
+cassandra: "sevice"+"statefulset"
+image: cassandra:3.11
+container_name: cassandra
+
+  cassandra:
+    image: cassandra:3.11
+    container_name: cassandra
+    restart: unless-stopped
+    hostname: cassandra
+    environment:
+      - MAX_HEAP_SIZE=1G
+      - HEAP_NEWSIZE=1G
+      - CASSANDRA_CLUSTER_NAME=thp
+    volumes:
+      - ./vol/cassandra-data:/var/lib/cassandra/data
+    healthcheck:
+      test: ["CMD-SHELL", "[ $$(nodetool statusgossip) = running ]"]
+      interval: 30s
+      timeout: 10s
+      retries: 5      
+
+
+thehive: "service"+"deployment"
+image: 'thehiveproject/thehive4:latest'
+container_name: thehive
+
+  thehive:
+    image: 'thehiveproject/thehive4:latest'
+    container_name: thehive
+    restart: on-failure
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    ports:
+      - '0.0.0.0:9000:9000'
+    volumes:
+      - ./thehive/application.conf:/etc/thehive/application.conf
+      - ./vol/data:/opt/data
+      - ./vol/index:/opt/index
+    command: '--no-config --no-config-secret'
+    
+
+
+numberOfComponents: 5
+deployments: 1
+services: 5
+statefulset: 4
+
+elasticsearch  :statefulset ->  :image:  'elasticsearch:7.11.1'                     port:   9200
+
+
+kibana         :deployment  ->  :image:  'docker.elastic.co/kibana/kibana:7.11.1'   port:   5601
+
+
+cortex         :statefulset ->  :image:  'thehiveproject/cortex:latest'             port:   9001
+
+
+cassandra      :statefulset ->  :image:  'cassandra:3.11'                           port:   9042
+
+
+thehive4       :statefulset ->  :image:  'thehiveproject/thehive4:latest'           port:   9000
+
+
+https://towardsdatascience.com/how-to-pass-a-configuration-file-to-a-kubernetes-pod-61c1bcd286a5

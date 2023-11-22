@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "cassandra.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "cassandra.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "cassandra.fullname" . }}-headless
+  {{- if not .Values.cassandra.autoscaling.enabled }}
+  replicas: {{ .Values.cassandra.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "cassandra.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "cassandra.labels" . | nindent 8 }}
+    spec:
+      {{- with .Values.cassandra.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.enablerNodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if not .Values.enablerNodeSelector }}
+        {{- with .Values.cassandra.nodeSelector }}
+      nodeSelector:
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
+      {{- with .Values.cassandra.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.cassandra.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.cassandra.podSecurityContext | nindent 8 }}
+      containers:
+        - name: cassandra
+          securityContext:
+            {{- toYaml .Values.cassandra.securityContext | nindent 12 }}
+          image: "{{ .Values.cassandra.image.repository }}:{{ .Values.cassandra.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.cassandra.image.pullPolicy }}
+          ports:
+            - name: cassandraport
+              containerPort: {{ .Values.cassandra.service.ports.cassandraport.containerPort }}
+              protocol: {{ .Values.cassandra.service.ports.cassandraport.protocol }}
+          resources:
+            {{- toYaml .Values.cassandra.resources | nindent 12 }}
+          {{- with .Values.cassandra.envVars }}
+          env:
+            - name: MAX_HEAP_SIZE
+              value: {{ .maxHeapSize | quote }}
+            - name: HEAP_NEWSIZE
+              value: {{ .heapNewSize | quote }}
+            - name: CASSANDRA_CLUSTER_NAME
+              value: {{ .cassandraClusterName | quote }}
+          {{- end }}
+          volumeMounts:
+            {{- if .Values.cassandra.persistence.enabled }}
+            - name: data
+              mountPath: /var/lib/cassandra/data
+            {{- end }}
+      volumes:
+  {{- if and .Values.cassandra.persistence.enabled .Values.cassandra.persistence.existingClaim }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ tpl .Values.cassandra.persistence.existingClaim $ }}
+  {{- else if not .Values.cassandra.persistence.enabled }}
+        - name: data
+          emptyDir: {}
+  {{- else }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+        {{- range .Values.cassandra.persistence.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.cassandra.persistence.size | quote }}
+  {{- end }}

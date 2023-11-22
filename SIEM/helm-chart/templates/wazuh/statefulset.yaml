@@ -1,0 +1,212 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "wazuh.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "wazuh.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "wazuh.fullname" . }}-headless
+  {{- if not .Values.wazuh.autoscaling.enabled }}
+  replicas: {{ .Values.wazuh.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "wazuh.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "wazuh.labels" . | nindent 8 }}
+    spec:
+      {{- with .Values.wazuh.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.enablerNodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if not .Values.enablerNodeSelector }}
+        {{- with .Values.wazuh.nodeSelector }}
+      nodeSelector:
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
+      {{- with .Values.wazuh.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.wazuh.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.wazuh.podSecurityContext | nindent 8 }}
+      containers:
+        - name: wazuh
+          securityContext:
+            {{- toYaml .Values.wazuh.securityContext | nindent 12 }}
+          image: "{{ .Values.wazuh.image.repository }}:{{ .Values.wazuh.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.wazuh.image.pullPolicy }}
+          ports:
+            - name: agentport1
+              containerPort: {{ .Values.wazuh.service.ports.agentport1.containerPort }}
+              protocol: {{ .Values.wazuh.service.ports.agentport1.protocol }}
+            - name: agentport2
+              containerPort: {{ .Values.wazuh.service.ports.agentport2.containerPort }}
+              protocol: {{ .Values.wazuh.service.ports.agentport2.protocol }}
+            - name: agentport3
+              containerPort: {{ .Values.wazuh.service.ports.agentport3.containerPort }}
+              protocol: {{ .Values.wazuh.service.ports.agentport3.protocol }}
+            - name: api
+              containerPort: {{ .Values.wazuh.service.ports.api.containerPort }}
+              protocol: {{ .Values.wazuh.service.ports.api.protocol }}
+          resources:
+            {{- toYaml .Values.wazuh.resources | nindent 12 }}
+          env:
+            - name: ELASTICSEARCH_URL
+              value:  {{ include "wazuh.elasticsearchUrl" . | quote }}
+            - name: ELASTIC_USERNAME
+              value: {{ .Values.wazuh.envVars.elasticUser | quote }}
+            - name: ELASTIC_PASSWORD
+              value: {{ .Values.wazuh.envVars.elasticPass | quote }}
+            - name: FILEBEAT_SSL_VERIFICATION_MODE
+              value: {{ .Values.wazuh.envVars.filebeatSsl | quote }}
+          volumeMounts:
+            {{- if .Values.wazuh.persistence.enabled }}
+            - name: ossec-api-configuration
+              mountPath: /var/ossec/api/configuration
+            - name: ossec-etc
+              mountPath: /var/ossec/etc
+            - name: ossec-logs
+              mountPath: /var/ossec/logs
+            - name: ossec-queue
+              mountPath: /var/ossec/queue
+            - name: ossec-var-multigroups
+              mountPath: /var/ossec/var/multigroups
+            - name: ossec-integrations
+              mountPath: /var/ossec/integrations
+            - name: ossec-active-response
+              mountPath: /var/ossec/active-response/bin
+            - name: ossec-agentless
+              mountPath: /var/ossec/agentless
+            - name: ossec-wodles
+              mountPath: /var/ossec/wodles
+            - name: filebeat-etc
+              mountPath: /etc/filebeat
+            - name: filebeat-var
+              mountPath: /var/lib/filebeat
+            {{- end }}
+  {{- if .Values.wazuh.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: ossec-api-configuration
+      spec:
+        accessModes:
+        {{- range .Values.wazuh.persistence.volumes.configuration.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.wazuh.persistence.volumes.configuration.size | quote }}
+    - metadata:
+        name: ossec-etc
+      spec:
+        accessModes:
+        {{- range .Values.wazuh.persistence.volumes.etc.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.wazuh.persistence.volumes.etc.size | quote }}
+    - metadata:
+        name: ossec-logs
+      spec:
+        accessModes:
+        {{- range .Values.wazuh.persistence.volumes.logs.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.wazuh.persistence.volumes.logs.size | quote }}
+    - metadata:
+        name: ossec-queue
+      spec:
+        accessModes:
+        {{- range .Values.wazuh.persistence.volumes.queue.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.wazuh.persistence.volumes.queue.size | quote }}
+    - metadata:
+        name: ossec-var-multigroups
+      spec:
+        accessModes:
+        {{- range .Values.wazuh.persistence.volumes.multigroups.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.wazuh.persistence.volumes.multigroups.size | quote }}
+    - metadata:
+        name: ossec-integrations
+      spec:
+        accessModes:
+        {{- range .Values.wazuh.persistence.volumes.integrations.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.wazuh.persistence.volumes.integrations.size | quote }}
+    - metadata:
+        name: ossec-active-response
+      spec:
+        accessModes:
+        {{- range .Values.wazuh.persistence.volumes.activeResponse.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.wazuh.persistence.volumes.activeResponse.size | quote }}
+    - metadata:
+        name: ossec-agentless
+      spec:
+        accessModes:
+        {{- range .Values.wazuh.persistence.volumes.agentless.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.wazuh.persistence.volumes.agentless.size | quote }}
+    - metadata:
+        name: ossec-wodles
+      spec:
+        accessModes:
+        {{- range .Values.wazuh.persistence.volumes.wodles.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.wazuh.persistence.volumes.wodles.size | quote }}
+    - metadata:
+        name: filebeat-etc
+      spec:
+        accessModes:
+        {{- range .Values.wazuh.persistence.volumes.filebeatEtc.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.wazuh.persistence.volumes.filebeatEtc.size | quote }}
+    - metadata:
+        name: filebeat-var
+      spec:
+        accessModes:
+        {{- range .Values.wazuh.persistence.volumes.filebeatVar.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.wazuh.persistence.volumes.filebeatVar.size | quote }}
+  {{- end }}

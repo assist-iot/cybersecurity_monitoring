@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: thehive
+  name: thehive
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: thehive
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        service: thehive
+    spec:
+      containers:
+        - args:
+            - --no-config
+            - --no-config-secret
+          image: thehiveproject/thehive4:latest
+          name: thehive
+          ports:
+            - containerPort: 9000
+          resources: {}
+          volumeMounts:
+            - mountPath: /etc/thehive/application.conf
+              name: thehive-claim0
+            - mountPath: /opt/data
+              name: thehive-claim1
+            - mountPath: /opt/index
+              name: thehive-claim2
+      restartPolicy: Always
+      volumes:
+        - name: thehive-claim0
+          persistentVolumeClaim:
+            claimName: thehive-claim0
+        - name: thehive-claim1
+          persistentVolumeClaim:
+            claimName: thehive-claim1
+        - name: thehive-claim2
+          persistentVolumeClaim:
+            claimName: thehive-claim2
+status: {}

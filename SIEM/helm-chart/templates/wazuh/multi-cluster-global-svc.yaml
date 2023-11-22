@@ -1,0 +1,29 @@
+{{- if .Values.globalService }}
+apiVersion: assist.eu/v1
+kind: MultiClusterService
+metadata:
+  name: {{ include "wazuh.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  annotations:
+    io.cilium/global-service: "true"
+  labels:
+    {{- include "wazuh.labels" . | nindent 4 }}
+spec:
+  ports:
+    - name: agentport1
+      port: {{ .Values.wazuh.service.ports.agentport1.port }}
+      targetPort: {{ .Values.wazuh.service.ports.agentport1.targetPort }}
+      protocol: {{ .Values.wazuh.service.ports.agentport1.protocol }}
+    - name: agentport2
+      port: {{ .Values.wazuh.service.ports.agentport2.port }}
+      targetPort: {{ .Values.wazuh.service.ports.agentport2.targetPort }}
+      protocol: {{ .Values.wazuh.service.ports.agentport2.protocol }}
+    - name: agentport3
+      port: {{ .Values.wazuh.service.ports.agentport3.port }}
+      targetPort: {{ .Values.wazuh.service.ports.agentport3.targetPort }}
+      protocol: {{ .Values.wazuh.service.ports.agentport3.protocol }}
+    - name: api
+      port: {{ .Values.wazuh.service.ports.api.port }}
+      targetPort: {{ .Values.wazuh.service.ports.api.targetPort }}
+      protocol: {{ .Values.wazuh.service.ports.api.protocol }}
+{{- end }}

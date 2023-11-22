@@ -1,0 +1,297 @@
+# Default values for enabler.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# String to partially override enabler.fullname template (will maintain the release name)
+nameOverride: ""
+# String to fully override enabler.fullname template
+fullnameOverride: ""
+# Deploy all the components in the same node
+enablerNodeSelector: {}
+# Cilium Multi-cluster global service
+globalService: false
+
+# Component wazuh values
+wazuh:
+  tier: external
+  replicaCount: 1
+
+  # Configuration of the container image
+  imagePullSecrets:
+    - name: authorization-repo-credentials
+  image:
+    repository: gitlab.assist-iot.eu:5050/wp5/t53/cybersecurity-monitoring/s21_siem-wazuhxamd64
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  # Configuration of the service: type and ports
+  service:
+    type: NodePort
+    ports:
+      agentport1:
+        port: 1514
+        targetPort: 1514
+        containerPort: 1514
+        protocol: TCP
+      agentport2:
+        port: 1515
+        targetPort: 1515
+        containerPort: 1515
+        protocol: TCP
+      agentport3:
+        port: 514
+        targetPort: 514
+        containerPort: 514
+        protocol: UDP
+      api:
+        port: 55000
+        targetPort: 55000
+        containerPort: 55000
+        protocol: TCP
+
+  # The specification of the resources is needed for the proper functioning 
+  # of the Smart Orchestrator enabler (requests)
+  # and of the Resource provisioning enabler (limits)
+  resources: {}
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+
+  autoscaling:
+    enabled: false
+    # minReplicas: 1
+    # maxReplicas: 3
+    # targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+
+  # Include here the environment variables to be used in the component's manifest (container section).
+  # Here and in the manifest is included an example.
+  envVars:
+    # elasticUrl: https://elasticsearch:9200
+    elasticUser: admin
+    elasticPass: admin
+    filebeatSsl: none
+
+
+  persistence:
+    enabled: true
+    existingClaim: ""
+    volumes:
+      configuration:
+        accessModes:
+          - ReadWriteOnce
+        size: 50Mi
+      etc:
+        accessModes:
+          - ReadWriteOnce
+        size: 50Mi
+      logs:
+        accessModes:
+          - ReadWriteOnce
+        size: 50Mi
+      queue:
+        accessModes:
+          - ReadWriteOnce
+        size: 50Mi
+      multigroups:
+        accessModes:
+          - ReadWriteOnce
+        size: 50Mi
+      integrations:
+        accessModes:
+          - ReadWriteOnce
+        size: 50Mi
+      activeResponse:
+        accessModes:
+          - ReadWriteOnce
+        size: 50Mi
+      agentless:
+        accessModes:
+          - ReadWriteOnce
+        size: 50Mi
+      wodles:
+        accessModes:
+          - ReadWriteOnce
+        size: 50Mi
+      filebeatEtc:
+        accessModes:
+          - ReadWriteOnce
+        size: 50Mi
+      filebeatVar:
+        accessModes:
+          - ReadWriteOnce
+        size: 50Mi
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Component elasticsearch values
+elasticsearch:
+  tier: internal
+  replicaCount: 1
+
+  # Configuration of the container image
+  imagePullSecrets:
+    - name: authorization-repo-credentials  
+  image:
+    repository: gitlab.assist-iot.eu:5050/wp5/t53/cybersecurity-monitoring/s21_siem-elkxamd64
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  # Configuration of the service: type and ports
+  service:
+    type: NodePort
+    ports:
+      api:
+        port: 9200
+        targetPort: 9200
+        containerPort: 9200
+        protocol: TCP
+
+  # The specification of the resources is needed for the proper functioning 
+  # of the Smart Orchestrator enabler (requests)
+  # and of the Resource provisioning enabler (limits)
+  resources: {}
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+
+  autoscaling:
+    enabled: false
+    # minReplicas: 1
+    # maxReplicas: 3
+    # targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+
+  # Include here the environment variables to be used in the component's manifest (container section).
+  # Here and in the manifest is included an example.
+  envVars:
+    # xpackSecurityenabled: false
+    discoveryType: single-node
+    clusterName: wazuh-cluster
+    networkHost: "0.0.0.0"
+    esJavaOpts: "-Xms2048m -Xmx2048m"
+    bootstrapMemoryLock: true
+
+  persistence:
+    enabled: true
+    existingClaim: ""
+    # mountPath: /path/in/container
+    accessModes:
+      - ReadWriteOnce
+    size: 500Mi
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Component kibana values
+kibana:
+  tier: internal
+  replicaCount: 1
+
+  # Configuration of the container image
+  imagePullSecrets:
+    - name: authorization-repo-credentials
+  image:
+    repository: gitlab.assist-iot.eu:5050/wp5/t53/cybersecurity-monitoring/s21_siem-kibanaxamd64
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  # Configuration of the service: type and ports
+  service:
+    # type: ClusterIP
+    type: NodePort
+    ports:
+      kibana:
+        port: 5601
+        targetPort: 5601
+        containerPort: 5601
+        protocol: TCP
+
+  # The specification of the resources is needed for the proper functioning 
+  # of the Smart Orchestrator enabler (requests)
+  # and of the Resource provisioning enabler (limits)
+  resources: {}
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+
+  autoscaling:
+    enabled: false
+    # minReplicas: 1
+    # maxReplicas: 3
+    # targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+
+  # Include here the environment variables to be used in the component's manifest (container section).
+  # Here and in the manifest is included an example.
+  envVars:
+    # - ELASTICSEARCH_URL=http://elasticsearch:9200
+    # - ELASTICSEARCH_USERNAME=admin
+    # - ELASTICSEARCH_PASSWORD=admin
+    # - SERVER_SSL_ENABLED=true
+    # - SERVER_SSL_CERTIFICATE=/usr/share/kibana/config/opendistroforelasticsearch.example.org.cert
+    # - SERVER_SSL_KEY=/usr/share/kibana/config/opendistroforelasticsearch.example.org.key  
+    # opendistroSecurityDisabled: "false"
+    # elasticUrl: https://elasticsearch:9200
+    # wazuh_url="${WAZUH_API_URL:-https://wazuh}"
+    # wazuh_port="${API_PORT:-55000}"
+    # api_username="${API_USERNAME:-wazuh-wui}"
+    # api_password="${API_PASSWORD:-wazuh-wui}"
+    elasticUserName: "admin"
+    elasticPassword: "admin"
+    serverSslEnabled: "true"
+    serverSslCertificate: "/usr/share/kibana/config/opendistroforelasticsearch.example.org.cert"
+    serverSslKey: "/usr/share/kibana/config/opendistroforelasticsearch.example.org.key"
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+

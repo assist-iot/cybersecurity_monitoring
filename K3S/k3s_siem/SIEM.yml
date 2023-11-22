@@ -1,0 +1,429 @@
+apiVersion: v1
+items:
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        service: elasticsearch
+      name: elasticsearch
+    spec:
+      ports:
+        - name: "9200"
+          port: 9200
+          targetPort: 9200
+      selector:
+        service: elasticsearch
+    status:
+      loadBalancer: {}
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        service: kibana
+      name: kibana
+    spec:
+      ports:
+        - name: "4343"
+          port: 4343
+          targetPort: 5601
+      selector:
+        service: kibana
+    status:
+      loadBalancer: {}
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        service: wazuh
+      name: wazuh
+    spec:
+      ports:
+        - name: "1514"
+          port: 1514
+          targetPort: 1514
+        - name: "1515"
+          port: 1515
+          targetPort: 1515
+        - name: "514"
+          port: 514
+          protocol: UDP
+          targetPort: 514
+        - name: "55000"
+          port: 55000
+          targetPort: 55000
+      selector:
+        service: wazuh
+    status:
+      loadBalancer: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+        service: elasticsearch
+      name: elasticsearch
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          service: elasticsearch
+      strategy:
+        type: Recreate
+      template:
+        metadata:
+          labels:
+            service: elasticsearch
+        spec:
+          containers:
+            - env:
+                - name: ES_JAVA_OPTS
+                  value: -Xms512m -Xmx512m
+                - name: cluster.name
+                  value: wazuh-cluster
+                - name: discovery.type
+                  value: single-node
+                - name: network.host
+                  value: 0.0.0.0
+              image: amazon/opendistro-for-elasticsearch:1.13.2
+              name: elasticsearch
+              ports:
+                - containerPort: 9200
+              resources: {}
+              volumeMounts:
+                - mountPath: /usr/share/elasticsearch/data
+                  name: elasticsearch-data
+                - mountPath: /usr/share/elasticsearch/logs
+                  name: elasticsearch-logs
+          hostname: elasticsearch
+          restartPolicy: Always
+          volumes:
+            - name: elasticsearch-data
+              persistentVolumeClaim:
+                claimName: elasticsearch-data
+            - name: elasticsearch-logs
+              persistentVolumeClaim:
+                claimName: elasticsearch-logs
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: elasticsearch-data
+      name: elasticsearch-data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: elasticsearch-logs
+      name: elasticsearch-logs
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+        service: kibana
+      name: kibana
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          service: kibana
+      strategy: {}
+      template:
+        metadata:
+          labels:
+            service: kibana
+        spec:
+          containers:
+            - env:
+                - name: ELASTICSEARCH_PASSWORD
+                  value: admin
+                - name: ELASTICSEARCH_USERNAME
+                  value: admin
+                - name: SERVER_SSL_CERTIFICATE
+                  value: /usr/share/kibana/config/opendistroforelasticsearch.example.org.cert
+                - name: SERVER_SSL_ENABLED
+                  value: "true"
+                - name: SERVER_SSL_KEY
+                  value: /usr/share/kibana/config/opendistroforelasticsearch.example.org.key
+              image: wazuh/wazuh-kibana-odfe:dev-version
+              name: kibana
+              ports:
+                - containerPort: 5601
+              resources: {}
+          hostname: kibana
+          restartPolicy: Always
+    status: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+        service: wazuh
+      name: wazuh
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          service: wazuh
+      strategy:
+        type: Recreate
+      template:
+        metadata:
+          labels:
+            service: wazuh
+        spec:
+          containers:
+            - env:
+                - name: ELASTICSEARCH_URL
+                  value: https://elasticsearch:9200
+                - name: ELASTIC_PASSWORD
+                  value: admin
+                - name: ELASTIC_USERNAME
+                  value: admin
+                - name: FILEBEAT_SSL_VERIFICATION_MODE
+                  value: none
+              image: wazuh/wazuh-odfe:dev-version
+              name: wazuh
+              ports:
+                - containerPort: 1514
+                - containerPort: 1515
+                - containerPort: 514
+                  protocol: UDP
+                - containerPort: 55000
+              resources: {}
+              volumeMounts:
+                - mountPath: /var/ossec/api/configuration
+                  name: ossec-api-configuration
+                - mountPath: /var/ossec/etc
+                  name: ossec-etc
+                - mountPath: /var/ossec/logs
+                  name: ossec-logs
+                - mountPath: /var/ossec/queue
+                  name: ossec-queue
+                - mountPath: /var/ossec/var/multigroups
+                  name: ossec-var-multigroups
+                - mountPath: /var/ossec/integrations
+                  name: ossec-integrations
+                - mountPath: /var/ossec/active-response/bin
+                  name: ossec-active-response
+                - mountPath: /var/ossec/agentless
+                  name: ossec-agentless
+                - mountPath: /var/ossec/wodles
+                  name: ossec-wodles
+                - mountPath: /etc/filebeat
+                  name: filebeat-etc
+                - mountPath: /var/lib/filebeat
+                  name: filebeat-var
+                - mountPath: /var/ossec/framework/python
+                  name: ossec-python
+          hostname: wazuh-manager
+          restartPolicy: Always
+          volumes:
+            - name: ossec-api-configuration
+              persistentVolumeClaim:
+                claimName: ossec-api-configuration
+            - name: ossec-etc
+              persistentVolumeClaim:
+                claimName: ossec-etc
+            - name: ossec-logs
+              persistentVolumeClaim:
+                claimName: ossec-logs
+            - name: ossec-queue
+              persistentVolumeClaim:
+                claimName: ossec-queue
+            - name: ossec-var-multigroups
+              persistentVolumeClaim:
+                claimName: ossec-var-multigroups
+            - name: ossec-integrations
+              persistentVolumeClaim:
+                claimName: ossec-integrations
+            - name: ossec-active-response
+              persistentVolumeClaim:
+                claimName: ossec-active-response
+            - name: ossec-agentless
+              persistentVolumeClaim:
+                claimName: ossec-agentless
+            - name: ossec-wodles
+              persistentVolumeClaim:
+                claimName: ossec-wodles
+            - name: filebeat-etc
+              persistentVolumeClaim:
+                claimName: filebeat-etc
+            - name: filebeat-var
+              persistentVolumeClaim:
+                claimName: filebeat-var
+            - name: ossec-python
+              persistentVolumeClaim:
+                claimName: ossec-python
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: ossec-api-configuration
+      name: ossec-api-configuration
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: ossec-etc
+      name: ossec-etc
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: ossec-logs
+      name: ossec-logs
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: ossec-queue
+      name: ossec-queue
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: ossec-var-multigroups
+      name: ossec-var-multigroups
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: ossec-integrations
+      name: ossec-integrations
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: ossec-active-response
+      name: ossec-active-response
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: ossec-agentless
+      name: ossec-agentless
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: ossec-wodles
+      name: ossec-wodles
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: filebeat-etc
+      name: filebeat-etc
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: filebeat-var
+      name: filebeat-var
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: ossec-python
+      name: ossec-python
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+kind: List
+metadata: {}
+

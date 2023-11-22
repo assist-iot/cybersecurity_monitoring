@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "thehive4.svc.headless" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "thehive4.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+    - name: thehiveport
+      port: {{ .Values.thehive4.service.ports.thehiveport.port }}
+      targetPort: {{ .Values.thehive4.service.ports.thehiveport.targetPort }}
+      protocol: {{ .Values.thehive4.service.ports.thehiveport.protocol }}
+  selector:
+    {{- include "thehive4.selectorLabels" . | nindent 4 }}

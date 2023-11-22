@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: cortex
+  name: cortex
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: cortex
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        service: cortex
+    spec:
+      containers:
+        - env:
+            - name: http_proxy
+            - name: https_proxy
+          image: thehiveproject/cortex:latest
+          name: cortex
+          ports:
+            - containerPort: 9001
+          resources: {}
+          volumeMounts:
+            - mountPath: /etc/cortex/application.conf
+              name: cortex-claim0
+            - mountPath: /var/run/docker.sock
+              name: cortex-claim1
+            - mountPath: /tmp
+              name: cortex-claim2
+      restartPolicy: Always
+      volumes:
+        - name: cortex-claim0
+          persistentVolumeClaim:
+            claimName: cortex-claim0
+        - name: cortex-claim1
+          persistentVolumeClaim:
+            claimName: cortex-claim1
+        - name: cortex-claim2
+          persistentVolumeClaim:
+            claimName: cortex-claim2
+status: {}

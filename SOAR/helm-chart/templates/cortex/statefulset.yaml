@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "cortex.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "cortex.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "cortex.fullname" . }}-headless
+  {{- if not .Values.cortex.autoscaling.enabled }}
+  replicas: {{ .Values.cortex.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "cortex.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "cortex.labels" . | nindent 8 }}
+    spec:
+      {{- with .Values.cortex.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.enablerNodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if not .Values.enablerNodeSelector }}
+        {{- with .Values.cortex.nodeSelector }}
+      nodeSelector:
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
+      {{- with .Values.cortex.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.cortex.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.cortex.podSecurityContext | nindent 8 }}
+      containers:
+        - name: cortex
+          securityContext:
+            {{- toYaml .Values.cortex.securityContext | nindent 12 }}
+          image: "{{ .Values.cortex.image.repository }}:{{ .Values.cortex.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.cortex.image.pullPolicy }}
+          ports:
+            - name: cortexport
+              containerPort: {{ .Values.cortex.service.ports.cortexport.containerPort }}
+              protocol: {{ .Values.cortex.service.ports.cortexport.protocol }}
+          resources:
+            {{- toYaml .Values.cortex.resources | nindent 12 }}
+          env:
+            - name: es_hostname
+              value: {{include "elasticsearch.fullname" . | quote }}
+            - name: es_uri
+              value: "http://$(es_hostname):{{ .Values.elasticsearch.service.ports.elasticport.port }}"
+            {{- with .Values.cortex.envVars }}
+            - name: http_proxy
+              value: {{ .httpProxy | quote }}
+            - name: https_proxy
+              value: {{ .httpsProxy | quote }}
+            {{- end }}
+          volumeMounts:
+            {{- if .Values.cortex.persistence.enabled }}
+            - name: applicationconf
+              mountPath: /etc/cortex/application.conf
+            - name: dockersock
+              mountPath: /var/run/docker.sock
+            - name: temps
+              mountPath: /tmp
+            {{- end }}
+{{- if .Values.cortex.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: applicationconf
+      spec:
+        accessModes:
+        {{- range .Values.cortex.persistence.volumes.applicationconf.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.cortex.persistence.volumes.applicationconf.size }}
+    - metadata:
+        name: dockersock
+      spec:
+        accessModes:
+        {{- range .Values.cortex.persistence.volumes.dockersock.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.cortex.persistence.volumes.dockersock.size }}
+    - metadata:
+        name: temps
+      spec:
+        accessModes:
+        {{- range .Values.cortex.persistence.volumes.temps.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.cortex.persistence.volumes.temps.size }}
+  {{- end }}

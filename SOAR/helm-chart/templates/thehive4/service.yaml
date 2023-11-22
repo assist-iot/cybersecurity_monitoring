@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "thehive4.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "thehive4.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.thehive4.service.type }}
+  ports:
+    - name: thehiveport
+      port: {{ .Values.thehive4.service.ports.thehiveport.port }}
+      targetPort: {{ .Values.thehive4.service.ports.thehiveport.targetPort }}
+      protocol: {{ .Values.thehive4.service.ports.thehiveport.protocol }}
+      {{- if and (or (eq .Values.thehive4.service.type "NodePort") (eq .Values.thehive4.service.type "LoadBalancer")) (not (empty .Values.thehive4.service.ports.thehiveport.nodePort)) }}
+      nodePort: {{ .Values.thehive4.service.ports.thehiveport.nodePort }}
+      {{- end }}
+  selector:
+    {{- include "thehive4.selectorLabels" . | nindent 4 }}

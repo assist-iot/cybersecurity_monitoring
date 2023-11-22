@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: backend
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: backend
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        service: backend
+    spec:
+      containers:
+        - env:
+            - name: DATASTORE_EMULATOR_HOST
+              value: shuffle-database:8000
+            - name: HTTPS_PROXY
+            - name: HTTP_PROXY
+            - name: ORG_ID
+              value: Shuffle
+            - name: SHUFFLE_APP_DOWNLOAD_LOCATION
+              value: https://github.com/frikky/shuffle-apps
+            - name: SHUFFLE_APP_FORCE_UPDATE
+              value: "false"
+            - name: SHUFFLE_APP_HOTLOAD_FOLDER
+              value: ./shuffle-apps
+            - name: SHUFFLE_DEFAULT_APIKEY
+              value: mysecretkey
+            - name: SHUFFLE_DEFAULT_PASSWORD
+              value: password
+            - name: SHUFFLE_DEFAULT_USERNAME
+              value: admin
+            - name: SHUFFLE_FILE_LOCATION
+              value: ./shuffle-files
+          image: ghcr.io/frikky/shuffle-backend:0.8.64
+          name: shuffle-backend
+          ports:
+            - containerPort: 5001
+          resources: {}
+          volumeMounts:
+            - mountPath: /var/run/docker.sock
+              name: backend-claim0
+            - mountPath: /shuffle-apps
+              name: backend-claim1
+            - mountPath: /shuffle-files
+              name: backend-claim2
+      hostname: shuffle-backend
+      restartPolicy: Always
+      volumes:
+        - name: backend-claim0
+          persistentVolumeClaim:
+            claimName: backend-claim0
+        - name: backend-claim1
+          persistentVolumeClaim:
+            claimName: backend-claim1
+        - name: backend-claim2
+          persistentVolumeClaim:
+            claimName: backend-claim2
+status: {}

@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "thehive4.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "thehive4.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "thehive4.fullname" . }}-headless
+  {{- if not .Values.thehive4.autoscaling.enabled }}
+  replicas: {{ .Values.thehive4.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "thehive4.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "thehive4.labels" . | nindent 8 }}
+    spec:
+      {{- with .Values.thehive4.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.enablerNodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if not .Values.enablerNodeSelector }}
+        {{- with .Values.thehive4.nodeSelector }}
+      nodeSelector:
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
+      {{- with .Values.thehive4.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.thehive4.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.thehive4.podSecurityContext | nindent 8 }}
+      containers:
+        - name: thehive4
+          securityContext:
+            {{- toYaml .Values.thehive4.securityContext | nindent 12 }}
+          image: "{{ .Values.thehive4.image.repository }}:{{ .Values.thehive4.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.thehive4.image.pullPolicy }}
+          ports:
+            - name: thehiveport
+              containerPort: {{ .Values.thehive4.service.ports.thehiveport.containerPort }}
+              protocol: {{ .Values.thehive4.service.ports.thehiveport.protocol }}
+          resources:
+            {{- toYaml .Values.thehive4.resources | nindent 12 }}
+          {{- with .Values.thehive4.envVars }}
+          env:
+            - name: EXAMPLE_ENV_VAR
+              value: {{ .exampleEnvVar | quote }}
+          {{- end }}
+          volumeMounts:
+            {{- if .Values.thehive4.persistence.enabled }}
+            - name: applicationconf
+              mountPath: /etc/thehive/application.conf
+            - name: data
+              mountPath: /opt/data
+            - name: index
+              mountPath: /opt/index
+            {{- end }}
+{{- if .Values.thehive4.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: applicationconf
+      spec:
+        accessModes:
+        {{- range .Values.thehive4.persistence.volumes.applicationconf.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.thehive4.persistence.volumes.applicationconf.size | quote }}
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+        {{- range .Values.thehive4.persistence.volumes.data.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.thehive4.persistence.volumes.data.size | quote }}
+    - metadata:
+        name: index
+      spec:
+        accessModes:
+        {{- range .Values.thehive4.persistence.volumes.index.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.thehive4.persistence.volumes.index.size | quote }}
+  {{- end }}

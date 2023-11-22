@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cassandra.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "cassandra.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.cassandra.service.type }}
+  ports:
+    - name: cassandraport
+      port: {{ .Values.cassandra.service.ports.cassandraport.port }}
+      targetPort: {{ .Values.cassandra.service.ports.cassandraport.targetPort }}
+      protocol: {{ .Values.cassandra.service.ports.cassandraport.protocol }}
+      {{- if and (or (eq .Values.cassandra.service.type "NodePort") (eq .Values.cassandra.service.type "LoadBalancer")) (not (empty .Values.cassandra.service.ports.cassandraport.nodePort)) }}
+      nodePort: {{ .Values.cassandra.service.ports.cassandraport.nodePort }}
+      {{- end }}
+  selector:
+    {{- include "cassandra.selectorLabels" . | nindent 4 }}

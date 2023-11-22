@@ -1,0 +1,857 @@
+apiVersion: v1
+items:
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        service: backend
+      name: backend
+    spec:
+      ports:
+        - name: "5001"
+          port: 5001
+          targetPort: 5001
+      selector:
+        service: backend
+    status:
+      loadBalancer: {}
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        service: cortex
+      name: cortex
+    spec:
+      ports:
+        - name: "9001"
+          port: 9001
+          targetPort: 9001
+      selector:
+        service: cortex
+    status:
+      loadBalancer: {}
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        service: database
+      name: database
+    spec:
+      ports:
+        - name: "8000"
+          port: 8000
+          targetPort: 8000
+      selector:
+        service: database
+    status:
+      loadBalancer: {}
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        service: elasticsearch
+      name: elasticsearch
+    spec:
+      ports:
+        - name: "9200"
+          port: 9200
+          targetPort: 9200
+      selector:
+        service: elasticsearch
+    status:
+      loadBalancer: {}
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        service: frontend
+      name: frontend
+    spec:
+      ports:
+        - name: "3001"
+          port: 3001
+          targetPort: 80
+        - name: "3443"
+          port: 3443
+          targetPort: 443
+      selector:
+        service: frontend
+    status:
+      loadBalancer: {}
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        service: kibana
+      name: kibana
+    spec:
+      ports:
+        - name: "5601"
+          port: 5601
+          targetPort: 5601
+      selector:
+        service: kibana
+    status:
+      loadBalancer: {}
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        service: misp
+      name: misp
+    spec:
+      ports:
+        - name: "80"
+          port: 80
+          targetPort: 80
+        - name: "443"
+          port: 443
+          targetPort: 443
+      selector:
+        service: misp
+    status:
+      loadBalancer: {}
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        service: thehive
+      name: thehive
+    spec:
+      ports:
+        - name: "9000"
+          port: 9000
+          targetPort: 9000
+      selector:
+        service: thehive
+    status:
+      loadBalancer: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+        service: backend
+      name: backend
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          service: backend
+      strategy:
+        type: Recreate
+      template:
+        metadata:
+          labels:
+            service: backend
+        spec:
+          containers:
+            - env:
+                - name: DATASTORE_EMULATOR_HOST
+                  value: shuffle-database:8000
+                - name: HTTPS_PROXY
+                - name: HTTP_PROXY
+                - name: ORG_ID
+                  value: Shuffle
+                - name: SHUFFLE_APP_DOWNLOAD_LOCATION
+                  value: https://github.com/frikky/shuffle-apps
+                - name: SHUFFLE_APP_FORCE_UPDATE
+                  value: "false"
+                - name: SHUFFLE_APP_HOTLOAD_FOLDER
+                  value: ./shuffle-apps
+                - name: SHUFFLE_DEFAULT_APIKEY
+                  value: mysecretkey
+                - name: SHUFFLE_DEFAULT_PASSWORD
+                  value: password
+                - name: SHUFFLE_DEFAULT_USERNAME
+                  value: admin
+                - name: SHUFFLE_FILE_LOCATION
+                  value: ./shuffle-files
+              image: ghcr.io/frikky/shuffle-backend:0.8.64
+              name: shuffle-backend
+              ports:
+                - containerPort: 5001
+              resources: {}
+              volumeMounts:
+                - mountPath: /var/run/docker.sock
+                  name: backend-claim0
+                - mountPath: /shuffle-apps
+                  name: backend-claim1
+                - mountPath: /shuffle-files
+                  name: backend-claim2
+          hostname: shuffle-backend
+          restartPolicy: Always
+          volumes:
+            - name: backend-claim0
+              persistentVolumeClaim:
+                claimName: backend-claim0
+            - name: backend-claim1
+              persistentVolumeClaim:
+                claimName: backend-claim1
+            - name: backend-claim2
+              persistentVolumeClaim:
+                claimName: backend-claim2
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: backend-claim0
+      name: backend-claim0
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: backend-claim1
+      name: backend-claim1
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: backend-claim2
+      name: backend-claim2
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+        service: cassandra
+      name: cassandra
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          service: cassandra
+      strategy:
+        type: Recreate
+      template:
+        metadata:
+          labels:
+            service: cassandra
+        spec:
+          containers:
+            - env:
+                - name: CASSANDRA_CLUSTER_NAME
+                  value: thp
+                - name: HEAP_NEWSIZE
+                  value: 1G
+                - name: MAX_HEAP_SIZE
+                  value: 1G
+              image: cassandra:3.11
+              name: cassandra
+              resources: {}
+              volumeMounts:
+                - mountPath: /var/lib/cassandra/data
+                  name: cassandra-claim0
+          hostname: cassandra
+          restartPolicy: Always
+          volumes:
+            - name: cassandra-claim0
+              persistentVolumeClaim:
+                claimName: cassandra-claim0
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: cassandra-claim0
+      name: cassandra-claim0
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+        service: cortex
+      name: cortex
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          service: cortex
+      strategy:
+        type: Recreate
+      template:
+        metadata:
+          labels:
+            service: cortex
+        spec:
+          containers:
+            - env:
+                - name: http_proxy
+                - name: https_proxy
+              image: thehiveproject/cortex:latest
+              name: cortex
+              ports:
+                - containerPort: 9001
+              resources: {}
+              volumeMounts:
+                - mountPath: /etc/cortex/application.conf
+                  name: cortex-claim0
+                - mountPath: /var/run/docker.sock
+                  name: cortex-claim1
+                - mountPath: /tmp
+                  name: cortex-claim2
+          restartPolicy: Always
+          volumes:
+            - name: cortex-claim0
+              persistentVolumeClaim:
+                claimName: cortex-claim0
+            - name: cortex-claim1
+              persistentVolumeClaim:
+                claimName: cortex-claim1
+            - name: cortex-claim2
+              persistentVolumeClaim:
+                claimName: cortex-claim2
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: cortex-claim0
+      name: cortex-claim0
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: cortex-claim1
+      name: cortex-claim1
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: cortex-claim2
+      name: cortex-claim2
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+        service: database
+      name: database
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          service: database
+      strategy:
+        type: Recreate
+      template:
+        metadata:
+          labels:
+            service: database
+        spec:
+          containers:
+            - image: frikky/shuffle:database
+              name: shuffle-database
+              ports:
+                - containerPort: 8000
+              resources: {}
+              volumeMounts:
+                - mountPath: /etc/shuffle
+                  name: database-claim0
+          hostname: shuffle-database
+          restartPolicy: Always
+          volumes:
+            - name: database-claim0
+              persistentVolumeClaim:
+                claimName: database-claim0
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: database-claim0
+      name: database-claim0
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+        service: db
+      name: db
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          service: db
+      strategy:
+        type: Recreate
+      template:
+        metadata:
+          labels:
+            service: db
+        spec:
+          containers:
+            - args:
+                - --default-authentication-plugin=mysql_native_password
+              env:
+                - name: MYSQL_DATABASE
+                  value: misp
+                - name: MYSQL_PASSWORD
+                  value: example
+                - name: MYSQL_ROOT_PASSWORD
+                  value: password
+                - name: MYSQL_USER
+                  value: misp
+              image: mysql:latest
+              name: db
+              resources: {}
+              volumeMounts:
+                - mountPath: /var/lib/mysql
+                  name: db-claim0
+          restartPolicy: Always
+          volumes:
+            - name: db-claim0
+              persistentVolumeClaim:
+                claimName: db-claim0
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: db-claim0
+      name: db-claim0
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+        service: elasticsearch
+      name: elasticsearch
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          service: elasticsearch
+      strategy:
+        type: Recreate
+      template:
+        metadata:
+          labels:
+            service: elasticsearch
+        spec:
+          containers:
+            - env:
+                - name: ES_JAVA_OPTS
+                  value: -Xms256m -Xmx256m
+                - name: bootstrap.memory_lock
+                  value: "true"
+                - name: cluster.name
+                  value: hive
+                - name: discovery.type
+                  value: single-node
+                - name: gateway.recover_after_nodes
+                  value: "1"
+                - name: http.host
+                  value: 0.0.0.0
+                - name: script.allowed_types
+                  value: ' inline'
+                - name: thread_pool.search.queue_size
+                  value: "100000"
+                - name: thread_pool.write.queue_size
+                  value: "10000"
+                - name: xpack.security.enabled
+                  value: "false"
+              image: docker.elastic.co/elasticsearch/elasticsearch:7.11.1
+              name: elasticsearch
+              ports:
+                - containerPort: 9200
+              resources: {}
+              volumeMounts:
+                - mountPath: /usr/share/elasticsearch/data
+                  name: elasticsearch-claim0
+                - mountPath: /usr/share/elasticsearch/logs
+                  name: elasticsearch-claim1
+          restartPolicy: Always
+          volumes:
+            - name: elasticsearch-claim0
+              persistentVolumeClaim:
+                claimName: elasticsearch-claim0
+            - name: elasticsearch-claim1
+              persistentVolumeClaim:
+                claimName: elasticsearch-claim1
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: elasticsearch-claim0
+      name: elasticsearch-claim0
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: elasticsearch-claim1
+      name: elasticsearch-claim1
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+        service: frontend
+      name: frontend
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          service: frontend
+      strategy: {}
+      template:
+        metadata:
+          labels:
+            service: frontend
+        spec:
+          containers:
+            - env:
+                - name: BACKEND_HOSTNAME
+                  value: shuffle-backend
+              image: ghcr.io/frikky/shuffle-frontend:0.8.64
+              name: shuffle-frontend
+              ports:
+                - containerPort: 80
+                - containerPort: 443
+              resources: {}
+          hostname: shuffle-frontend
+          restartPolicy: Always
+    status: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+        service: kibana
+      name: kibana
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          service: kibana
+      strategy: {}
+      template:
+        metadata:
+          labels:
+            service: kibana
+        spec:
+          containers:
+            - image: docker.elastic.co/kibana/kibana:7.11.1
+              name: kibana
+              ports:
+                - containerPort: 5601
+              resources: {}
+          restartPolicy: Always
+    status: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+        service: misp
+      name: misp
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          service: misp
+      strategy: {}
+      template:
+        metadata:
+          labels:
+            service: misp
+        spec:
+          containers:
+            - env:
+                - name: CRON_USER_ID
+                  value: "1"
+                - name: DISIPV6
+                  value: "true"
+                - name: HOSTNAME
+                  value: https://localhost
+                - name: INIT
+                  value: "true"
+                - name: REDIS_FQDN
+                  value: redis
+              image: coolacid/misp-docker:core-latest
+              name: misp
+              ports:
+                - containerPort: 80
+                - containerPort: 443
+              resources: {}
+          restartPolicy: Always
+    status: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+        service: misp-modules
+      name: misp-modules
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          service: misp-modules
+      strategy: {}
+      template:
+        metadata:
+          labels:
+            service: misp-modules
+        spec:
+          containers:
+            - env:
+                - name: REDIS_BACKEND
+                  value: redis
+              image: coolacid/misp-docker:modules-latest
+              name: misp-modules
+              resources: {}
+          restartPolicy: Always
+    status: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+        service: orborus
+      name: orborus
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          service: orborus
+      strategy:
+        type: Recreate
+      template:
+        metadata:
+          labels:
+            service: orborus
+        spec:
+          containers:
+            - env:
+                - name: BASE_URL
+                  value: http://shuffle-backend:5001
+                - name: CLEANUP
+                  value: "false"
+                - name: DOCKER_API_VERSION
+                  value: "1.40"
+                - name: ENVIRONMENT_NAME
+                  value: Shuffle
+                - name: HTTPS_PROXY
+                - name: HTTP_PROXY
+                - name: ORG_ID
+                  value: Shuffle
+                - name: SHUFFLE_APP_SDK_VERSION
+                  value: 0.8.60
+                - name: SHUFFLE_BASE_IMAGE_NAME
+                  value: frikky
+                - name: SHUFFLE_BASE_IMAGE_REGISTRY
+                  value: ghcr.io
+                - name: SHUFFLE_BASE_IMAGE_TAG_SUFFIX
+                  value: '"-0.8.60"'
+                - name: SHUFFLE_ORBORUS_EXECUTION_TIMEOUT
+                  value: "600"
+                - name: SHUFFLE_PASS_WORKER_PROXY
+                  value: "False"
+                - name: SHUFFLE_WORKER_VERSION
+                  value: 0.8.63
+              image: ghcr.io/frikky/shuffle-orborus:0.8.63
+              name: shuffle-orborus
+              resources: {}
+              volumeMounts:
+                - mountPath: /var/run/docker.sock
+                  name: orborus-claim0
+          hostname: shuffle-orborus
+          restartPolicy: Always
+          volumes:
+            - name: orborus-claim0
+              persistentVolumeClaim:
+                claimName: orborus-claim0
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: orborus-claim0
+      name: orborus-claim0
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+        service: redis
+      name: redis
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          service: redis
+      strategy: {}
+      template:
+        metadata:
+          labels:
+            service: redis
+        spec:
+          containers:
+            - image: redis:latest
+              name: redis
+              resources: {}
+          restartPolicy: Always
+    status: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+        service: thehive
+      name: thehive
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          service: thehive
+      strategy:
+        type: Recreate
+      template:
+        metadata:
+          labels:
+            service: thehive
+        spec:
+          containers:
+            - args:
+                - --no-config
+                - --no-config-secret
+              image: thehiveproject/thehive4:latest
+              name: thehive
+              ports:
+                - containerPort: 9000
+              resources: {}
+              volumeMounts:
+                - mountPath: /etc/thehive/application.conf
+                  name: thehive-claim0
+                - mountPath: /opt/data
+                  name: thehive-claim1
+                - mountPath: /opt/index
+                  name: thehive-claim2
+          restartPolicy: Always
+          volumes:
+            - name: thehive-claim0
+              persistentVolumeClaim:
+                claimName: thehive-claim0
+            - name: thehive-claim1
+              persistentVolumeClaim:
+                claimName: thehive-claim1
+            - name: thehive-claim2
+              persistentVolumeClaim:
+                claimName: thehive-claim2
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: thehive-claim0
+      name: thehive-claim0
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: thehive-claim1
+      name: thehive-claim1
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        service: thehive-claim2
+      name: thehive-claim2
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+kind: List
+metadata: {}
+

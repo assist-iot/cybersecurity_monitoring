@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: wazuh
+  name: wazuh
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: wazuh
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        service: wazuh
+    spec:
+      containers:
+        - env:
+            - name: ELASTICSEARCH_URL
+              value: https://elasticsearch:9200
+            - name: ELASTIC_PASSWORD
+              value: admin
+            - name: ELASTIC_USERNAME
+              value: admin
+            - name: FILEBEAT_SSL_VERIFICATION_MODE
+              value: none
+          image: wazuh/wazuh-odfe:dev-version
+          name: wazuh
+          ports:
+            - containerPort: 1514
+            - containerPort: 1515
+            - containerPort: 514
+              protocol: UDP
+            - containerPort: 55000
+          resources: {}
+          volumeMounts:
+            - mountPath: /var/ossec/api/configuration
+              name: ossec-api-configuration
+            - mountPath: /var/ossec/etc
+              name: ossec-etc
+            - mountPath: /var/ossec/logs
+              name: ossec-logs
+            - mountPath: /var/ossec/queue
+              name: ossec-queue
+            - mountPath: /var/ossec/var/multigroups
+              name: ossec-var-multigroups
+            - mountPath: /var/ossec/integrations
+              name: ossec-integrations
+            - mountPath: /var/ossec/active-response/bin
+              name: ossec-active-response
+            - mountPath: /var/ossec/agentless
+              name: ossec-agentless
+            - mountPath: /var/ossec/wodles
+              name: ossec-wodles
+            - mountPath: /etc/filebeat
+              name: filebeat-etc
+            - mountPath: /var/lib/filebeat
+              name: filebeat-var
+            - mountPath: /var/ossec/framework/python
+              name: ossec-python
+      hostname: wazuh-manager
+      restartPolicy: Always
+      volumes:
+        - name: ossec-api-configuration
+          persistentVolumeClaim:
+            claimName: ossec-api-configuration
+        - name: ossec-etc
+          persistentVolumeClaim:
+            claimName: ossec-etc
+        - name: ossec-logs
+          persistentVolumeClaim:
+            claimName: ossec-logs
+        - name: ossec-queue
+          persistentVolumeClaim:
+            claimName: ossec-queue
+        - name: ossec-var-multigroups
+          persistentVolumeClaim:
+            claimName: ossec-var-multigroups
+        - name: ossec-integrations
+          persistentVolumeClaim:
+            claimName: ossec-integrations
+        - name: ossec-active-response
+          persistentVolumeClaim:
+            claimName: ossec-active-response
+        - name: ossec-agentless
+          persistentVolumeClaim:
+            claimName: ossec-agentless
+        - name: ossec-wodles
+          persistentVolumeClaim:
+            claimName: ossec-wodles
+        - name: filebeat-etc
+          persistentVolumeClaim:
+            claimName: filebeat-etc
+        - name: filebeat-var
+          persistentVolumeClaim:
+            claimName: filebeat-var
+        - name: ossec-python
+          persistentVolumeClaim:
+            claimName: ossec-python
+status: {}

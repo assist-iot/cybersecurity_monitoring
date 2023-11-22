@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cassandra.svc.headless" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "cassandra.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+    - name: cassandraport
+      port: {{ .Values.cassandra.service.ports.cassandraport.port }}
+      targetPort: {{ .Values.cassandra.service.ports.cassandraport.targetPort }}
+      protocol: {{ .Values.cassandra.service.ports.cassandraport.protocol }}
+  selector:
+    {{- include "cassandra.selectorLabels" . | nindent 4 }}

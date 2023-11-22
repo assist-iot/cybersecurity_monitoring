@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kibana.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "kibana.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.kibana.autoscaling.enabled }}
+  replicas: {{ .Values.kibana.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "kibana.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kibana.labels" . | nindent 8 }}
+    spec:
+      {{- with .Values.kibana.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.enablerNodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if not .Values.enablerNodeSelector }}
+        {{- with .Values.kibana.nodeSelector }}
+      nodeSelector:
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
+      {{- with .Values.kibana.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.kibana.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.kibana.podSecurityContext | nindent 8 }}
+      containers:
+        - name: kibana
+          securityContext:
+            {{- toYaml .Values.kibana.securityContext | nindent 12 }}
+          image: "{{ .Values.kibana.image.repository }}:{{ .Values.kibana.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.kibana.image.pullPolicy }}
+          ports:
+            - name: kibana
+              containerPort: {{ .Values.kibana.service.ports.kibana.containerPort }}
+              protocol: {{ .Values.kibana.service.ports.kibana.protocol }}
+          resources:
+            {{- toYaml .Values.kibana.resources | nindent 12 }}
+          env:
+            - name: ELASTICSEARCH_URL
+              value:  {{ include "wazuh.elasticsearchUrl" . | quote }}
+            - name: WAZUH_API_URL
+              value:  {{ include "kibana.wazuhUrl" . | quote }}
+            - name: API_PORT
+              value: {{ .Values.wazuh.service.ports.api.port | quote }} 
+          {{- with .Values.kibana.envVars }}
+            - name: ELASTICSEARCH_USERNAME
+              value: {{ .elasticUserName | quote }}
+            - name: ELASTICSEARCH_PASSWORD
+              value: {{ .elasticPassword | quote }}
+            - name: SERVER_SSL_ENABLED
+              value: {{ .serverSslEnabled | quote }}
+            - name: SERVER_SSL_CERTIFICATE
+              value: {{ .serverSslCertificate | quote }}
+            - name: SERVER_SSL_KEY
+              value: {{ .serverSslKey | quote }}
+          {{- end }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+    # - ELASTICSEARCH_URL=http://elasticsearch:9200
+    # - ELASTICSEARCH_USERNAME=admin
+    # - ELASTICSEARCH_PASSWORD=admin
+    # - SERVER_SSL_ENABLED=true
+    # - SERVER_SSL_CERTIFICATE=/usr/share/kibana/config/opendistroforelasticsearch.example.org.cert
+    # - SERVER_SSL_KEY=/usr/share/kibana/config/opendistroforelasticsearch.example.org.key  
+    # opendistroSecurityDisabled: "false"

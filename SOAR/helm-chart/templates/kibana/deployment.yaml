@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kibana.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "kibana.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.kibana.autoscaling.enabled }}
+  replicas: {{ .Values.kibana.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "kibana.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kibana.labels" . | nindent 8 }}
+    spec:
+      {{- with .Values.kibana.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.enablerNodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if not .Values.enablerNodeSelector }}
+        {{- with .Values.kibana.nodeSelector }}
+      nodeSelector:
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
+      {{- with .Values.kibana.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.kibana.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.kibana.podSecurityContext | nindent 8 }}
+      containers:
+        - name: kibana
+          securityContext:
+            {{- toYaml .Values.kibana.securityContext | nindent 12 }}
+          image: "{{ .Values.kibana.image.repository }}:{{ .Values.kibana.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.kibana.image.pullPolicy }}
+          ports:
+            - name: kibanaport
+              containerPort: {{ .Values.kibana.service.ports.kibanaport.containerPort }}
+              protocol: {{ .Values.kibana.service.ports.kibanaport.protocol }}
+          resources:
+            {{- toYaml .Values.kibana.resources | nindent 12 }}
+          env:
+            - name: ELASTICSEARCH_HOSTS
+              value: '["http://{{ include "elasticsearch.fullname" . }}:{{ .Values.elasticsearch.service.ports.elasticport.port}}"]'

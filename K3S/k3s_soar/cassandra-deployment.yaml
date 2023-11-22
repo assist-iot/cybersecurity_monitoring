@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: cassandra
+  name: cassandra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: cassandra
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        service: cassandra
+    spec:
+      containers:
+        - env:
+            - name: CASSANDRA_CLUSTER_NAME
+              value: thp
+            - name: HEAP_NEWSIZE
+              value: 1G
+            - name: MAX_HEAP_SIZE
+              value: 1G
+          image: cassandra:3.11
+          name: cassandra
+          resources: {}
+          volumeMounts:
+            - mountPath: /var/lib/cassandra/data
+              name: cassandra-claim0
+      hostname: cassandra
+      restartPolicy: Always
+      volumes:
+        - name: cassandra-claim0
+          persistentVolumeClaim:
+            claimName: cassandra-claim0
+status: {}

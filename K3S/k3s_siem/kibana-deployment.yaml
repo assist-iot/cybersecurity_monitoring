@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: kibana
+  name: kibana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: kibana
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        service: kibana
+    spec:
+      containers:
+        - env:
+            - name: ELASTICSEARCH_PASSWORD
+              value: admin
+            - name: ELASTICSEARCH_USERNAME
+              value: admin
+            - name: SERVER_SSL_CERTIFICATE
+              value: /usr/share/kibana/config/opendistroforelasticsearch.example.org.cert
+            - name: SERVER_SSL_ENABLED
+              value: "true"
+            - name: SERVER_SSL_KEY
+              value: /usr/share/kibana/config/opendistroforelasticsearch.example.org.key
+          image: wazuh/wazuh-kibana-odfe:dev-version
+          name: kibana
+          ports:
+            - containerPort: 5601
+          resources: {}
+      hostname: kibana
+      restartPolicy: Always
+status: {}

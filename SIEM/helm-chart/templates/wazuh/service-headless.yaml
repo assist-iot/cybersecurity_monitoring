@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "wazuh.svc.headless" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "wazuh.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+    - name: agentport1
+      port: {{ .Values.wazuh.service.ports.agentport1.port }}
+      targetPort: {{ .Values.wazuh.service.ports.agentport1.targetPort }}
+      protocol: {{ .Values.wazuh.service.ports.agentport1.protocol }}
+    - name: agentport2
+      port: {{ .Values.wazuh.service.ports.agentport2.port }}
+      targetPort: {{ .Values.wazuh.service.ports.agentport2.targetPort }}
+      protocol: {{ .Values.wazuh.service.ports.agentport2.protocol }}
+    - name: agentport3
+      port: {{ .Values.wazuh.service.ports.agentport3.port }}
+      targetPort: {{ .Values.wazuh.service.ports.agentport3.targetPort }}
+      protocol: {{ .Values.wazuh.service.ports.agentport3.protocol }}
+    - name: api
+      port: {{ .Values.wazuh.service.ports.api.port }}
+      targetPort: {{ .Values.wazuh.service.ports.api.targetPort }}
+      protocol: {{ .Values.wazuh.service.ports.api.protocol }}
+  selector:
+    {{- include "elasticsearch.selectorLabels" . | nindent 4 }}

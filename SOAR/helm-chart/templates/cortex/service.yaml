@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cortex.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "cortex.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.cortex.service.type }}
+  ports:
+    - name: cortexport
+      port: {{ .Values.cortex.service.ports.cortexport.port }}
+      targetPort: {{ .Values.cortex.service.ports.cortexport.targetPort }}
+      protocol: {{ .Values.cortex.service.ports.cortexport.protocol }}
+      {{- if and (or (eq .Values.cortex.service.type "NodePort") (eq .Values.cortex.service.type "LoadBalancer")) (not (empty .Values.cortex.service.ports.cortexport.nodePort)) }}
+      nodePort: {{ .Values.cortex.service.ports.cortexport.nodePort }}
+      {{- end }}
+  selector:
+    {{- include "cortex.selectorLabels" . | nindent 4 }}

@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: misp-modules
+  name: misp-modules
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: misp-modules
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        service: misp-modules
+    spec:
+      containers:
+        - env:
+            - name: REDIS_BACKEND
+              value: redis
+          image: coolacid/misp-docker:modules-latest
+          name: misp-modules
+          resources: {}
+      restartPolicy: Always
+status: {}
