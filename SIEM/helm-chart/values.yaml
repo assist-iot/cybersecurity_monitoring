@@ -17,10 +17,10 @@ wazuh:
   replicaCount: 1
 
   # Configuration of the container image
-  imagePullSecrets:
-    - name: authorization-repo-credentials
+#  imagePullSecrets:
+#    - name: authorization-repo-credentials
   image:
-    repository: gitlab.assist-iot.eu:5050/wp5/t53/cybersecurity-monitoring/s21_siem-wazuhxamd64
+    repository: assistiot/cybersecurity-monitoring_id-wzh
     # Overrides the image tag whose default is the chart appVersion.
     tag: "latest"
     pullPolicy: IfNotPresent
@@ -147,10 +147,10 @@ elasticsearch:
   replicaCount: 1
 
   # Configuration of the container image
-  imagePullSecrets:
-    - name: authorization-repo-credentials  
+#  imagePullSecrets:
+#    - name: authorization-repo-credentials  
   image:
-    repository: gitlab.assist-iot.eu:5050/wp5/t53/cybersecurity-monitoring/s21_siem-elkxamd64
+    repository: assistiot/cybersecurity-monitoring_id-elk
     # Overrides the image tag whose default is the chart appVersion.
     tag: "latest"
     pullPolicy: IfNotPresent
@@ -222,10 +222,10 @@ kibana:
   replicaCount: 1
 
   # Configuration of the container image
-  imagePullSecrets:
-    - name: authorization-repo-credentials
+#  imagePullSecrets:
+#    - name: authorization-repo-credentials
   image:
-    repository: gitlab.assist-iot.eu:5050/wp5/t53/cybersecurity-monitoring/s21_siem-kibanaxamd64
+    repository: assistiot/cybersecurity-monitoring_id-kbn
     # Overrides the image tag whose default is the chart appVersion.
     tag: "latest"
     pullPolicy: IfNotPresent
