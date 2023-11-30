@@ -19,9 +19,9 @@ elasticsearch:
   # Configuration of the container image.
   imagePullSecrets: []
   image:
-    repository: elasticsearch
+    repository: assistiot/cybersecurity-monitoring_ir-elk
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "7.11.1"
+    tag: "latest"
     pullPolicy: IfNotPresent
   
   # Configuration of the service: type and ports.
@@ -110,9 +110,9 @@ kibana:
   # Configuration of the container image.
   imagePullSecrets: []
   image:
-    repository: docker.elastic.co/kibana/kibana
+    repository: assistiot/cybersecurity-monitoring_ir-kbn
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "7.11.1"
+    tag: "latest"
     pullPolicy: IfNotPresent
   
   # Configuration of the service: type and ports.
@@ -174,7 +174,7 @@ cortex:
   # Configuration of the container image.
   imagePullSecrets: []
   image:
-    repository: thehiveproject/cortex
+    repository: assistiot/cybersecurity-monitoring_ir-ctx
     # Overrides the image tag whose default is the chart appVersion.
     tag: "latest"
     pullPolicy: IfNotPresent
@@ -257,9 +257,9 @@ cassandra:
   # Configuration of the container image.
   imagePullSecrets: []
   image:
-    repository: cassandra
+    repository: assistiot/cybersecurity-monitoring_ir-cas
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "3.11"
+    tag: "latest"
     pullPolicy: IfNotPresent
   
   # Configuration of the service: type and ports.
@@ -331,7 +331,7 @@ thehive4:
   # Configuration of the container image.
   imagePullSecrets: []
   image:
-    repository: thehiveproject/thehive4
+    repository: assistiot/cybersecurity-monitoring_ir-thv
     # Overrides the image tag whose default is the chart appVersion.
     tag: "latest"
     pullPolicy: IfNotPresent
